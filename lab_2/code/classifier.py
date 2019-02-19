@@ -185,8 +185,8 @@ def gradient_descent_step(learning_rate, old_weights, old_bias, weight_grads, bi
     # given the learning rate and gradients and return the new weights and bias.
     # Until you've implemented this correctly, we just return the old weights and bias
     # without updating.
-    new_weights = old_weights
-    new_bias = old_bias
+    new_weights = [x - learning_rate * y for x, y in zip(old_weights, weight_grads)]
+    new_bias = old_bias - learning_rate * bias_grad
 
     return new_weights, new_bias
 
@@ -243,6 +243,15 @@ class HingeLoss:
         ### YOUR CODE HERE ###
         # Compute the hinge loss of the data given weights and bias
 
+        for (feature, label) in zip(data.features(), data.labels):
+            dot_product = 0
+            for d in feature:
+                dot_product += weights[d]
+            dot_product += bias
+            step = label * dot_product
+            if step < 1:
+                loss += 1 - step
+
         # Divide the loss by the number of examples to make it independent of the data size.
         loss /= len(data)
         return loss
@@ -255,6 +264,17 @@ class HingeLoss:
 
         ### YOUR CODE HERE ###
         # Compute the gradients of the hinge loss with respect to the weights and bias
+
+        for (feature, label) in zip(data.features(), data.labels):
+            dot_product = 0
+            for d in feature:
+                dot_product += weights[d]
+            dot_product += bias
+            step = label * dot_product
+            if step < 1:
+                for d in feature:
+                    weight_gradients[d] += -label
+                bias_gradient += -label
 
         # Divide the loss by the number of examples to make it independent of the data size.
         weight_gradients_per_example = [g / len(data) for g in weight_gradients]
@@ -282,6 +302,7 @@ class L2Regulariser:
         ### YOUR CODE HERE ###
         # Compute the value of the l2 regularisation term.
         reg_loss = 0.0
+        reg_loss = sum(w * w for w in weights)
 
         return reg_loss
 
@@ -292,6 +313,7 @@ class L2Regulariser:
         # Compute the correct gradient vector corresponding to the l2 loss term.
         # The existing code just returns a vector of zeros. This should be replaced.
         reg_gradient = [0.0 for _ in weights]
+        reg_gradient = [2 * w for w in weights]
 
         return reg_gradient
 
