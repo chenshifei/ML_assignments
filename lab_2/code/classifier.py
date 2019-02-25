@@ -9,24 +9,27 @@ def main():
     # Modify the following lines to change the training hyperparameters.
 
     # Regularisation strength
-    reg_lambda = 0.001
+    reg_lambda = 0.0
 
     # Learning rate
-    learning_rate = 0.001
+    learning_rate = 0.07
 
     # Number of training iterations
-    niterations = 5
+    niterations = 100
 
     # Loss function to use (select one and comment out the other)
     loss_function = LogisticLoss()
     # loss_function = HingeLoss()
 
     # Type of regularisation to use (select one and comment out the other)
-    regulariser = L1Regulariser()
-    # regulariser = L2Regulariser()
+    # regulariser = L1Regulariser()
+    regulariser = L2Regulariser()
 
     # This should only be enabled once you've decided on a final set of hyperparameters
-    enable_test_set_scoring = False
+    enable_test_set_scoring = True
+
+    # Controls to use perceptron or not
+    enable_perceptron = True
 
     # Type of features to use. This can be set to 'bigram' or 'unigram+bigram' to use
     # bigram features instead of or in addition to unigram features.
@@ -62,9 +65,12 @@ def main():
 
     # Train the classifier.
     print('Starting training.')
-    weights, bias, training_log = train(training_data, val_data,
-                                        loss_function, regulariser,
-                                        reg_lambda, learning_rate, niterations)
+    if enable_perceptron:
+        weights, bias, training_log = train_perceptron(training_data, val_data,                                                niterations)
+    else:
+        weights, bias, training_log = train(training_data, val_data,
+                                            loss_function, regulariser,
+                                            reg_lambda, learning_rate, niterations)
     print('Training completed.')
 
     print()
@@ -177,6 +183,63 @@ def train(training_data, val_data, loss_fn, regulariser, reg_lambda, learning_ra
 
     return weights, bias, log
 
+def train_perceptron(training_data, val_data, niterations):
+    """Trains a perceptron classifier.
+
+    Arguments:
+        training_data -- the training data set
+        val_data -- the validation data set
+        niterations -- number of iterations to run."""
+
+    log = []
+    nfeatures = len(training_data.vocabulary)
+
+    # Initialise weights and bias to 0
+    weights = [0.0 for _ in range(nfeatures)]
+    bias = 0.0
+
+    # Training loop
+    for i in range(niterations):
+        for (x, y) in zip(training_data.features(), training_data.labels):
+            a = sum(weights[d] for d in x) + bias
+            if y * a <= 0:
+                product = [0 for _ in range(nfeatures)]
+                for d in x:
+                    product[d] = y
+                weights = [w + yx for (w, yx) in zip(weights, product)]
+                bias += y
+
+        # Now we're done.
+        # The rest of the loop just computes some useful info to monitor the training progress,
+        # but it's not required for the algorithm to work.
+
+        # Training and validation accuracy
+        training_predictions = predict(weights, bias, training_data)
+        training_accuracy = accuracy(training_data.labels, training_predictions)
+
+        val_predictions = predict(weights, bias, val_data)
+        val_accuracy = accuracy(val_data.labels, val_predictions)
+
+        # All of these values are stored in a dictionary.
+        log_record = collections.OrderedDict()
+        log_record['training_acc'] = training_accuracy
+        log_record['val_acc'] = val_accuracy
+        log_record['training_loss_reg'] = 0
+        log_record['training_loss_unreg'] = 0
+        log_record['training_acc'] = training_accuracy
+        log_record['val_loss'] = 0
+        log_record['val_acc'] = val_accuracy
+        log_record['param_norm'] = 0
+        log_record['grad_norm'] = 0
+
+        # Display info on training progress
+        util.display_log_record(i, log_record)
+        log.append(log_record)
+
+        if training_accuracy == 1:
+            break
+
+    return weights, bias, log
 
 def gradient_descent_step(learning_rate, old_weights, old_bias, weight_grads, bias_grad):
     """Performs a gradient descent update on the weights and the bias and returns the new values."""
@@ -301,7 +364,6 @@ class L2Regulariser:
         """Computes the loss term added by the regulariser (a scalar)."""
         ### YOUR CODE HERE ###
         # Compute the value of the l2 regularisation term.
-        reg_loss = 0.0
         reg_loss = sum(w * w for w in weights)
 
         return reg_loss
@@ -312,7 +374,6 @@ class L2Regulariser:
         ### YOUR CODE HERE ###
         # Compute the correct gradient vector corresponding to the l2 loss term.
         # The existing code just returns a vector of zeros. This should be replaced.
-        reg_gradient = [0.0 for _ in weights]
         reg_gradient = [2 * w for w in weights]
 
         return reg_gradient
