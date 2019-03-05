@@ -60,7 +60,7 @@ class Net(torch.nn.Module):
         # Define the forward function of the classifier
         # Its expected input x is a tensor of the shape m*n, where n is the
         # number of features in the data and m is the number of examples.
-        raise NotImplementedError('Implement classifier forward function.')
+        return torch.matmul(x, self.weights) + self.bias
 
 
     
