@@ -104,7 +104,7 @@ def train(train_x, train_y, nfeatures,
         with torch.no_grad():  # We don't want to backprop this!
             validation_loss = criterion(val_margins, val_y)
 
-        optimizer = optim.SGD(net.parameters(), lr=l_rate)
+        optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
 
         # in your training loop:
         optimizer.zero_grad()   # zero the gradient buffers
@@ -195,14 +195,19 @@ class LogisticLoss:
         # Your code here!
         # Compute logistic loss over the whole tensor of weights.
         # Reduction should be mean reduction rather than log reduction: (loss / |pred|) rather than (loss / log(2))
-        raise NotImplementedError('Implement log loss')
+
+        # loss = torch.log(torch.ones(1) + torch.exp(-torch.matmul(pred, y)))
+        # loss = sum(torch.log(torch.ones(1) + torch.exp(-element_p * element_y)) for element_p, element_y in zip(pred, y))
+        loss = (torch.ones_like(pred) + (-pred * y).exp()).log().sum()
+        return loss / torch.numel(pred)
 
 class HingeLoss:
     @staticmethod
     def __call__(pred, y, hinge=0):
         # Your code here!
         # Compute hinge loss over the whole tensor of weights.
-        raise NotImplementedError('Implement hinge loss')
+        loss = (torch.ones_like(pred) - pred * y).clamp(min=0).sum()
+        return loss / torch.numel(pred)
 
 
 def main():
@@ -229,9 +234,9 @@ def main():
     epochs = 30
 
     # Loss function to use (select one and comment out the other)
-    loss_function = torch.nn.SoftMarginLoss()
-    #loss_function = LogisticLoss()
-    #loss_function = HingeLoss()
+    # loss_function = torch.nn.SoftMarginLoss()
+    # loss_function = LogisticLoss()
+    loss_function = HingeLoss()
     #loss_function = torch.nn.MSELoss()
 
     
