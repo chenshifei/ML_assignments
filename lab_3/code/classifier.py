@@ -2,6 +2,7 @@ from time import time
 from sys import stderr
 import math
 import torch
+import torch.optim as optim
 import collections
 import numpy
 
@@ -103,7 +104,12 @@ def train(train_x, train_y, nfeatures,
         with torch.no_grad():  # We don't want to backprop this!
             validation_loss = criterion(val_margins, val_y)
 
-            
+        optimizer = optim.SGD(net.parameters(), lr=l_rate)
+
+        # in your training loop:
+        optimizer.zero_grad()   # zero the gradient buffers
+        training_loss.backward()
+        optimizer.step()    # Does the update    
 
         epoch_end = time()
 
