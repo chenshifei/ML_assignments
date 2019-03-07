@@ -82,6 +82,8 @@ def train(train_x, train_y, nfeatures,
     # 'Criterion' is how loss function is referred to in PyTorch tutorials.  Don't ask me why.
     criterion = loss_function
 
+    optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
+
     training_log = []
 
     if verbose:
@@ -104,12 +106,10 @@ def train(train_x, train_y, nfeatures,
         with torch.no_grad():  # We don't want to backprop this!
             validation_loss = criterion(val_margins, val_y)
 
-        optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
-
         # in your training loop:
         optimizer.zero_grad()   # zero the gradient buffers
         training_loss.backward()
-        optimizer.step()    # Does the update    
+        optimizer.step()    # Does the update
 
         epoch_end = time()
 
@@ -196,17 +196,21 @@ class LogisticLoss:
         # Compute logistic loss over the whole tensor of weights.
         # Reduction should be mean reduction rather than log reduction: (loss / |pred|) rather than (loss / log(2))
 
-        # loss = torch.log(torch.ones(1) + torch.exp(-torch.matmul(pred, y)))
-        # loss = sum(torch.log(torch.ones(1) + torch.exp(-element_p * element_y)) for element_p, element_y in zip(pred, y))
         loss = (torch.ones_like(pred) + (-pred * y).exp()).log().sum()
-        return loss / torch.numel(pred)
+
+        # I took a look at the PyTorch source code 
+        # https://github.com/pytorch/pytorch/blob/master/aten/src/THNN/generic/SoftMarginCriterion.c
+        # and realized the meaning of 'reduction'
+        if reduction == 'mean':
+            loss = loss / torch.numel(pred)
+        return loss
 
 class HingeLoss:
     @staticmethod
     def __call__(pred, y, hinge=0):
         # Your code here!
         # Compute hinge loss over the whole tensor of weights.
-        loss = (torch.ones_like(pred) - pred * y).clamp(min=0).sum()
+        loss = (torch.ones_like(pred) - pred * y).clamp(min=hinge).sum()
         return loss / torch.numel(pred)
 
 
@@ -234,10 +238,10 @@ def main():
     epochs = 30
 
     # Loss function to use (select one and comment out the other)
-    # loss_function = torch.nn.SoftMarginLoss()
+    loss_function = torch.nn.SoftMarginLoss()
     # loss_function = LogisticLoss()
-    loss_function = HingeLoss()
-    #loss_function = torch.nn.MSELoss()
+    # loss_function = HingeLoss()
+    # loss_function = torch.nn.MSELoss()
 
     
     # 5. Only enable once you're done with tuning
