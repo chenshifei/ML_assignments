@@ -82,7 +82,8 @@ def train(train_x, train_y, nfeatures,
     # 'Criterion' is how loss function is referred to in PyTorch tutorials.  Don't ask me why.
     criterion = loss_function
 
-    optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
+    # optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
+    optimizer = optim.Adam(net.parameters(), lr=l_rate, weight_decay=weight_decay)
 
     training_log = []
 
@@ -155,7 +156,7 @@ def predict(net, sd_data):
     margin = net(sd_data)
     predictions = torch.where(margin > 0.0,
                               torch.FloatTensor([1]),
-                              torch.FloatTensor([-1]))
+                              torch.FloatTensor([0]))
     return predictions
 
 
@@ -232,20 +233,21 @@ def main():
     weight_decay = 0.0001
 
     # Learning rate
-    learning_rate = 0.0001
+    learning_rate = 1
 
     # Number of training epochs
-    epochs = 30
+    epochs = 300
 
     # Loss function to use (select one and comment out the other)
-    loss_function = torch.nn.SoftMarginLoss()
+    # loss_function = torch.nn.SoftMarginLoss()
+    loss_function = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.2]))
     # loss_function = LogisticLoss()
     # loss_function = HingeLoss()
     # loss_function = torch.nn.MSELoss()
 
     
     # 5. Only enable once you're done with tuning
-    enable_test_set_scoring = False
+    enable_test_set_scoring = True
 
     
     # Type of features to use. This can be set to 'bigram' or 'unigram+bigram' to use
