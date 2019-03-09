@@ -48,6 +48,8 @@ def show_stats(title, log, weights, bias, vocabulary, top_n=10):
     print('Final training F1: {0:.3}'.format(log[-1]['training_F1']))
     print('Best validation F1:{0:.3}'.format( best_validation_F1))
     print('Final validation F1: {0:.3}'.format(log[-1]['val_F1']))
+    print('Final validation precison: {0:.3}'.format(log[-1]['val_pre']))
+    print('Final validation recall: {0:.3}'.format(log[-1]['val_recall']))
 
     print()
     print('Number of weights: %d' % len(weights))
@@ -125,7 +127,7 @@ def load_awry_data(infile, task = 'comment', lowercase = False, remove_stopwords
                 attack = entry["awry_info"]["comment_has_personal_attack"]
             if task == 'conversation':
                 attack = entry["awry_info"]["conversation_has_personal_attack"]
-            labels.append(1 if attack == True else 0)
+            labels.append(1 if attack == True else -1)
 
     #return comments,labels
 

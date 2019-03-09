@@ -37,7 +37,7 @@ In the official PyTorch document\footnote{\url{https://pytorch.org/docs/stable/o
 
 For the comment task, tuning the hyperparameters isn't too different from Assignment 2. Still the first thing I have figured out is the epoch (number of iterations). For a learning rate of 0.1 the results are stable after 100 epochs. I then tried a higher learning rate at 10 and saw a lower accuracy and F1 score on the validation data set so this make me curious. The learning curve vibrated a lot in the begining but after 100 steps it started to show signs of a smooth curve and is likely to keep the trend afterwards. I increased the epoch to 300 to see if it really stablizes while trying to find the largest possbile learning rate which woule not raise an exception (learning rate at 20, for example, will trigger an exception in the plotting code). Fortunately it did, as the learning curve shown in \ref{fig:learning_rate}.
 
-\begin{figure}[p]
+\begin{figure}[h]
     \centering
     \includegraphics[width=\columnwidth, keepaspectratio]{{../results/12_300_softm_0.0001}.png}
     \caption{Learning Curve Showing High Learning Rate Will Stablize Despite Initial Vibrations}
@@ -59,6 +59,10 @@ Both of the top 10 features from the classifier make sense to humans, especially
 
 \subsection{Testing and Reflection}
 
+For the moment my classifier can't generalize its knowledge to the test data very well. I can achieve 0.945 of accuracy and 0.56 of F1 score on the test data, which is roughly at the same level with the performance on the validation data. But comparing them with the training data set that has an F1 score of 0.96 they are both way off the target. This is mainly caused by the low recall (below 0.3) which means our predictions can only pickup half of the positive, or personal attack words.
 
+But there are definitely ways to improve. For example choosing \verb|Adam| instead of \verb|SGD| to be our optimizer. However our real challenge is to deal with a highly skewed data set. I have seen lots of discussions on the internet that suggest people trying \verb|BCELoss()| or \verb|BCEWithLogitsLoss()| as the loss function\footnote{\url{https://discuss.pytorch.org/t/dealing-with-imbalanced-datasets-in-pytorch/22596/11}}. After some tweaks like relabeling the negative sample to 0 instead 1 and giving a higher weight to the positive labels, I have improved the the F1 score on the test data set to 0.634. In addition some other posts mentioned that oversampling/undersampling some classes can be a potential solution as well. In our data set I think by oversampling those positive data should be the option to help countact data skewness. \verb|PyTorch| has some built-in utilities for sampling data\footnote{\url{https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader}} so definitely it is feasible.
 
-\end{document}                                                                                                                                                                                  
+Overall, developing using libraries specialized in matrix or vector processing saves a lot of time from tedious array operations and calculations, but users are required to change their minds to think about the question and formulas in vector spaces. Besides that, \verb|PyTorch| has plenty of everyday-using functions for machine learning to call and a large community of users to discuss with. It is easier for actual engineering problems, though it can lead people to concern less on the theoratical part.
+
+\end{document}

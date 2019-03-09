@@ -82,8 +82,8 @@ def train(train_x, train_y, nfeatures,
     # 'Criterion' is how loss function is referred to in PyTorch tutorials.  Don't ask me why.
     criterion = loss_function
 
-    # optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
-    optimizer = optim.Adam(net.parameters(), lr=l_rate, weight_decay=weight_decay)
+    optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
+    # optimizer = optim.Adam(net.parameters(), lr=l_rate, weight_decay=weight_decay)
 
     training_log = []
 
@@ -122,7 +122,7 @@ def train(train_x, train_y, nfeatures,
 
         val_predictions = predict(net, val_x)
         val_accuracy = accuracy(val_predictions, val_y)
-        _, _, val_F1 = precision_recall_F1(val_predictions, val_y)
+        val_precision, val_recall, val_F1 = precision_recall_F1(val_predictions, val_y)
 
         log_record = collections.OrderedDict()
         log_record['training_acc'] = train_accuracy
@@ -131,6 +131,8 @@ def train(train_x, train_y, nfeatures,
         log_record['val_acc'] = val_accuracy
         log_record['val_loss'] = validation_loss.item()
         log_record['val_F1'] = val_F1
+        log_record['val_pre'] = val_precision
+        log_record['val_recall'] = val_recall
         log_record['epoch_time'] = epoch_end - epoch_start
 
         training_log.append(log_record)
@@ -156,7 +158,7 @@ def predict(net, sd_data):
     margin = net(sd_data)
     predictions = torch.where(margin > 0.0,
                               torch.FloatTensor([1]),
-                              torch.FloatTensor([0]))
+                              torch.FloatTensor([-1]))
     return predictions
 
 
@@ -233,14 +235,14 @@ def main():
     weight_decay = 0.0001
 
     # Learning rate
-    learning_rate = 1
+    learning_rate = 12
 
     # Number of training epochs
     epochs = 300
 
     # Loss function to use (select one and comment out the other)
-    # loss_function = torch.nn.SoftMarginLoss()
-    loss_function = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.2]))
+    loss_function = torch.nn.SoftMarginLoss()
+    # loss_function = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.2]))
     # loss_function = LogisticLoss()
     # loss_function = HingeLoss()
     # loss_function = torch.nn.MSELoss()
