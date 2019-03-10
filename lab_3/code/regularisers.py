@@ -9,7 +9,8 @@ class L1Regulariser:
 
     @staticmethod
     def gradients(weights):
-        """Computes subgradients of the regularisation term with respect to the weights (a vector)."""
+        """Computes subgradients of the regularisation term with respect to the
+        weights (a vector)."""
         return (weights > 0).float()
 
 
@@ -21,5 +22,6 @@ class L2Regulariser:
 
     @staticmethod
     def gradients(weights):
-        """Computes the gradients of the regularisation term with respect to the weights (a vector)."""
+        """Computes the gradients of the regularisation term with respect to
+        the weights (a vector)."""
         return 2 * weights

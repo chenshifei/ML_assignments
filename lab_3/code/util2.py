@@ -1,12 +1,9 @@
 import collections
-import glob
+import sys
+import json
 import itertools
 import matplotlib.pyplot as pyplot
 import numpy
-import os
-import sys
-import json
-import re
 
 from nltk.corpus import stopwords
 
@@ -46,8 +43,9 @@ def show_stats(title, log, weights, bias, vocabulary, top_n=10):
     print()
     print('Best training F1: {0:.3}'.format(best_training_F1))
     print('Final training F1: {0:.3}'.format(log[-1]['training_F1']))
-    print('Best validation F1:{0:.3}'.format( best_validation_F1))
+    print('Best validation F1:{0:.3}'.format(best_validation_F1))
     print('Final validation F1: {0:.3}'.format(log[-1]['val_F1']))
+    print()
     print('Final validation precison: {0:.3}'.format(log[-1]['val_pre']))
     print('Final validation recall: {0:.3}'.format(log[-1]['val_recall']))
 
@@ -108,14 +106,12 @@ def weight_histogram(ax, weights):
 
 
 #Data loading
-def load_awry_data(infile, task = 'comment', lowercase = False, remove_stopwords = False):
+def load_awry_data(infile, task='comment', lowercase=False, remove_stopwords=False):
     comments = []
     labels = []
 
     with open(infile, 'r') as readin:
         wiki_json = json.load(readin)
-        reduced_data = []
-        i = 0
         for entry in wiki_json:
             tokens = entry['text'].split(' ')
             if lowercase:
@@ -127,7 +123,7 @@ def load_awry_data(infile, task = 'comment', lowercase = False, remove_stopwords
                 attack = entry["awry_info"]["comment_has_personal_attack"]
             if task == 'conversation':
                 attack = entry["awry_info"]["conversation_has_personal_attack"]
-            labels.append(1 if attack == True else -1)
+            labels.append(1 if attack else 0)
 
     #return comments,labels
 
@@ -146,10 +142,13 @@ class SentimentData:
             unigrams.update(snt)
             bigrams.update(a + ' ' + b for a, b in zip(snt, snt[1:]))
 
-        self.unigram_vocabulary = collections.OrderedDict((w, i) for i, w in enumerate(sorted(unigrams)))
-        self.bigram_vocabulary = collections.OrderedDict((w, i) for i, w in enumerate(sorted(bigrams)))
+        self.unigram_vocabulary = collections.OrderedDict(
+            (w, i) for i, w in enumerate(sorted(unigrams)))
+        self.bigram_vocabulary = collections.OrderedDict(
+            (w, i) for i, w in enumerate(sorted(bigrams)))
         self.combined_vocabulary = \
-            collections.OrderedDict((w, i) for i, w in enumerate(itertools.chain(sorted(unigrams), sorted(bigrams))))
+            collections.OrderedDict(
+                (w, i) for i, w in enumerate(itertools.chain(sorted(unigrams), sorted(bigrams))))
 
         self.feature_type = 'unigram'
         self.vocabulary = self.unigram_vocabulary
@@ -169,7 +168,8 @@ class SentimentData:
     def random_split(self, proportions):
         nexamples = len(self.sentences)
         sum_p = sum(proportions)
-        idx = numpy.cumsum(numpy.array([0] + [int(p * nexamples / sum_p) for p in proportions], dtype=numpy.int32))
+        idx = numpy.cumsum(numpy.array(
+            [0] + [int(p * nexamples / sum_p) for p in proportions], dtype=numpy.int32))
         perm = numpy.random.permutation(nexamples)
         return self._split_data(idx, perm)
 
@@ -218,7 +218,7 @@ def sparse_to_dense(data, nfeatures):
         f_index = sorted(ft)
         ds = []
         for i in range(nfeatures):
-            if len(f_index) > 0 and i == f_index[0]:
+            if f_index and i == f_index[0]:
                 ds.append(1)
                 f_index.pop(0)
             else:

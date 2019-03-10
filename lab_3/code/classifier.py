@@ -1,13 +1,10 @@
 from time import time
-from sys import stderr
-import math
+import collections
 import torch
 import torch.optim as optim
-import collections
 import numpy
 
 import util2
-from regularisers import *
 
 ##################################################
 # Welcome to Lab 3!                              #
@@ -34,7 +31,8 @@ numpy.random.seed(seed)
 # We will train and update this.
 # You need to define the forward function: What it does when called.
 class Net(torch.nn.Module):
-    """Wraps the weights and bias in a Module so that we can perform easy backpropagation and optimisation on them
+    """Wraps the weights and bias in a Module so that we can perform easy
+    backpropagation and optimisation on them
 
     Required parameters on instantiation:
     --nfeatures   : The number of features in each line (only 1D for this task).
@@ -47,8 +45,8 @@ class Net(torch.nn.Module):
     def __init__(self, nfeatures, initialiser='zero'):
         super(Net, self).__init__()
         if initialiser == 'zero':
-            self.weights = torch.zeros([nfeatures], dtype = torch.float)
-            self.bias = torch.zeros([1], dtype = torch.float)
+            self.weights = torch.zeros([nfeatures], dtype=torch.float)
+            self.bias = torch.zeros([1], dtype=torch.float)
         elif initialiser == 'normal':
             self.weights = 0.1 * torch.randn([nfeatures])
             self.bias = 0.1 * torch.randn([1])
@@ -64,7 +62,7 @@ class Net(torch.nn.Module):
         return torch.matmul(x, self.weights) + self.bias
 
 
-    
+
 
 # 2. Autograd and optimisation
 # This training loop is calling the loss function and computing loss.
@@ -82,15 +80,13 @@ def train(train_x, train_y, nfeatures,
     # 'Criterion' is how loss function is referred to in PyTorch tutorials.  Don't ask me why.
     criterion = loss_function
 
-    optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
-    # optimizer = optim.Adam(net.parameters(), lr=l_rate, weight_decay=weight_decay)
+    # optimizer = optim.SGD(net.parameters(), lr=l_rate, weight_decay=weight_decay)
+    optimizer = optim.Adam(net.parameters(), lr=l_rate, weight_decay=weight_decay)
 
     training_log = []
 
     if verbose:
         print('Beginning training.')
-
-    best_val_loss = float('inf')
 
     n = 0
     while n < n_epoch:
@@ -114,7 +110,7 @@ def train(train_x, train_y, nfeatures,
 
         epoch_end = time()
 
-        
+
         # This part generates statistics, graphs and stuff
         train_predictions = predict(net, train_x)
         train_accuracy = accuracy(train_predictions, train_y)
@@ -154,11 +150,12 @@ def train(train_x, train_y, nfeatures,
 # you want to fiddle with the predict threshold).
 ####################################################################
 def predict(net, sd_data):
-    """Applies the classifier defined by the weights and the bias to the data and returns a list of predicted labels."""
+    """Applies the classifier defined by the weights and the bias to the data
+    and returns a list of predicted labels."""
     margin = net(sd_data)
     predictions = torch.where(margin > 0.0,
                               torch.FloatTensor([1]),
-                              torch.FloatTensor([-1]))
+                              torch.FloatTensor([0]))
     return predictions
 
 
@@ -170,10 +167,10 @@ def precision_recall_F1(predictions, labels):
     """Computes P, R, F1 given prediction and label vectors"""
     pred_pos = predictions == 1
     true_pos = labels == 1
-    correct_pred = pred_pos[pred_pos==true_pos]
-    correct_pred = correct_pred[correct_pred==1].numel()
-    total_true = true_pos[true_pos==1].numel()
-    total_pred = pred_pos[pred_pos==1].numel()
+    correct_pred = pred_pos[pred_pos == true_pos]
+    correct_pred = correct_pred[correct_pred == 1].numel()
+    total_true = true_pos[true_pos == 1].numel()
+    total_pred = pred_pos[pred_pos == 1].numel()
 
     recall = correct_pred / total_true
     try:
@@ -184,24 +181,26 @@ def precision_recall_F1(predictions, labels):
         F1 = 0.0
 
     return precision, recall, F1
-    
-    
+
+
 #################################################################
 
 
 # 3. Loss Functions
-# Below are some very basic custom loss functions.  They're the same ones as we used in Lab 2 (Log Loss and Hinge Loss.
+# Below are some very basic custom loss functions.
+# They're the same ones as we used in Lab 2 (Log Loss and Hinge Loss.
 # Implement these functions using PyTorch language.
 class LogisticLoss:
     @staticmethod
     def __call__(pred, y, reduction='mean'):
         # Your code here!
         # Compute logistic loss over the whole tensor of weights.
-        # Reduction should be mean reduction rather than log reduction: (loss / |pred|) rather than (loss / log(2))
+        # Reduction should be mean reduction rather than log reduction:
+        # (loss / |pred|) rather than (loss / log(2))
 
         loss = (torch.ones_like(pred) + (-pred * y).exp()).log().sum()
 
-        # I took a look at the PyTorch source code 
+        # I took a look at the PyTorch source code
         # https://github.com/pytorch/pytorch/blob/master/aten/src/THNN/generic/SoftMarginCriterion.c
         # and realized the meaning of 'reduction'
         if reduction == 'mean':
@@ -232,26 +231,27 @@ def main():
     # Regularisation strength
     # This is also known as "weight decay", particularly in some optimisation
     # algorithms.  PyTorch uses this terminology.
-    weight_decay = 0.0001
+    weight_decay = 0.0002
 
     # Learning rate
-    learning_rate = 12
+    learning_rate = 0.2
 
     # Number of training epochs
-    epochs = 300
+    epochs = 200
 
     # Loss function to use (select one and comment out the other)
-    loss_function = torch.nn.SoftMarginLoss()
-    # loss_function = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.2]))
+    # loss_function = torch.nn.SoftMarginLoss()
+    loss_function = torch.nn.BCEWithLogitsLoss(pos_weight=torch.FloatTensor([2.2]))
     # loss_function = LogisticLoss()
     # loss_function = HingeLoss()
     # loss_function = torch.nn.MSELoss()
 
-    
-    # 5. Only enable once you're done with tuning
-    enable_test_set_scoring = True
 
-    
+    # 5. Only enable once you're done with tuning
+    enable_test_set_scoring = False
+
+    enable_plots = False
+
     # Type of features to use. This can be set to 'bigram' or 'unigram+bigram' to use
     # bigram features instead of or in addition to unigram features.
     # Not required for assignment.
@@ -267,12 +267,12 @@ def main():
     print()
     print('Loading data sets...')
 
-    
+
     data_dir = 'tokenised_conversations.json'
-    data = util2.load_awry_data(data_dir, task = chosen_task)
+    data = util2.load_awry_data(data_dir, task=chosen_task)
 
     data.select_feature_type(feature_type)
-    
+
     # Split the data set randomly into training, validation and test sets.
     training_data, val_data, test_data = data.train_val_test_split()
     nfeatures = len(training_data.vocabulary)
@@ -293,15 +293,15 @@ def main():
     ds_test = util2.sparse_to_dense(test_data, nfeatures)
     print('Test converted...')
     # And convert to torch Tensors
-    ds_train = torch.tensor(ds_train, dtype=torch.float)
-    ds_val = torch.tensor(ds_val, dtype=torch.float)
-    ds_test = torch.tensor(ds_test, dtype=torch.float)
+    ds_train = torch.FloatTensor(ds_train)
+    ds_val = torch.FloatTensor(ds_val)
+    ds_test = torch.FloatTensor(ds_test)
 
     print('Data sets loaded.\n')
 
 
 
-    
+
     # Begin training model
     model, training_log = train(train_x=ds_train,
                                 train_y=training_labels,
@@ -325,13 +325,14 @@ def main():
 
     # If you want to plot accuracy instead of loss, change
     # training_loss -> training_acc ; val_loss -> val_acc
-    util2.create_plots(
-        title,
-        training_log,
-        model.weights,
-        log_keys=(
-            'training_loss',
-            'val_loss'))
+    if enable_plots:
+        util2.create_plots(
+            title,
+            training_log,
+            model.weights,
+            log_keys=(
+                'training_loss',
+                'val_loss'))
 
     if enable_test_set_scoring:
 
@@ -343,7 +344,7 @@ def main():
         test_predictions = predict(model, ds_test)
         test_accuracy = accuracy(test_predictions, test_labels)
         _, _, test_F1 = precision_recall_F1(test_predictions, test_labels)
-        
+
         print()
         print('Test set performance:')
         print()
