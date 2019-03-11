@@ -73,6 +73,7 @@ def train(train_x, train_y, nfeatures,
           val_x, val_y,
           loss_function,
           l_rate=0.1, weight_decay=0.1,
+          patience=-1, patience_metric='val_loss',
           n_epoch=20, verbose=1):
 
     net = Net(nfeatures, initialiser='zero')  # Here we instantiate our Net
@@ -89,32 +90,40 @@ def train(train_x, train_y, nfeatures,
         print('Beginning training.')
 
     n = 0
+    last_patience_metric = 0
+    if patience_metric == 'val_loss':
+        last_patience_metric = 1
+    epoches_after_patience = 0
+    best_model = net
+
     while n < n_epoch:
 
         epoch_start = time()
 
-        margins = net(train_x)
-        val_margins = net(val_x)
+        for batch_x, batch_y in zip(train_x, train_y):
 
-        # Calculates training loss
-        training_loss = criterion(margins, train_y)
+            margins = net(batch_x)
+            val_margins = net(val_x)
 
-        # Calculates validation loss
-        with torch.no_grad():  # We don't want to backprop this!
-            validation_loss = criterion(val_margins, val_y)
+            # Calculates training loss
+            training_loss = criterion(margins, batch_y)
 
-        # in your training loop:
-        optimizer.zero_grad()   # zero the gradient buffers
-        training_loss.backward()
-        optimizer.step()    # Does the update
+            # Calculates validation loss
+            with torch.no_grad():  # We don't want to backprop this!
+                validation_loss = criterion(val_margins, val_y)
+
+            # in your training loop:
+            optimizer.zero_grad()   # zero the gradient buffers
+            training_loss.backward()
+            optimizer.step()    # Does the update
 
         epoch_end = time()
 
 
         # This part generates statistics, graphs and stuff
-        train_predictions = predict(net, train_x)
-        train_accuracy = accuracy(train_predictions, train_y)
-        _, _, train_F1 = precision_recall_F1(train_predictions, train_y)
+        train_predictions = predict(net, batch_x)
+        train_accuracy = accuracy(train_predictions, batch_y)
+        _, _, train_F1 = precision_recall_F1(train_predictions, batch_y)
 
         val_predictions = predict(net, val_x)
         val_accuracy = accuracy(val_predictions, val_y)
@@ -135,6 +144,24 @@ def train(train_x, train_y, nfeatures,
 
         if verbose:
             util2.display_log_record(n, log_record)
+
+        if patience > -1:
+            metric_diff = 0
+            if patience_metric == 'val_loss':
+                metric_diff = abs(last_patience_metric - validation_loss.item())
+                last_patience_metric = validation_loss.item()
+            elif patience_metric == 'val_acc':
+                metric_diff = abs(val_accuracy - last_patience_metric)
+                last_patience_metric = val_accuracy
+
+            if metric_diff < 0.0001:
+                epoches_after_patience += 1
+                best_model = net
+            else:
+                epoches_after_patience = 0
+
+            if epoches_after_patience == patience:
+                return best_model, training_log
 
         n += 1
 
@@ -172,11 +199,12 @@ def precision_recall_F1(predictions, labels):
     total_true = true_pos[true_pos == 1].numel()
     total_pred = pred_pos[pred_pos == 1].numel()
 
-    recall = correct_pred / total_true
     try:
+        recall = correct_pred / total_true
         precision = correct_pred / total_pred
         F1 = 2 * ((precision * recall) / (precision + recall))
     except ZeroDivisionError:
+        recall = 0.0
         precision = 0.0
         F1 = 0.0
 
@@ -231,13 +259,18 @@ def main():
     # Regularisation strength
     # This is also known as "weight decay", particularly in some optimisation
     # algorithms.  PyTorch uses this terminology.
-    weight_decay = 0.0002
+    weight_decay = 0.0001
 
     # Learning rate
-    learning_rate = 0.2
+    learning_rate = 0.1
 
     # Number of training epochs
-    epochs = 200
+    epochs = 300
+
+    batch_size = 1
+
+    patience = 30
+    patience_metric = 'val_acc'
 
     # Loss function to use (select one and comment out the other)
     # loss_function = torch.nn.SoftMarginLoss()
@@ -250,7 +283,7 @@ def main():
     # 5. Only enable once you're done with tuning
     enable_test_set_scoring = False
 
-    enable_plots = False
+    enable_plots = True
 
     # Type of features to use. This can be set to 'bigram' or 'unigram+bigram' to use
     # bigram features instead of or in addition to unigram features.
@@ -276,24 +309,24 @@ def main():
     # Split the data set randomly into training, validation and test sets.
     training_data, val_data, test_data = data.train_val_test_split()
     nfeatures = len(training_data.vocabulary)
+    mini_batches = training_data.random_split(range(1, batch_size + 1))
 
     print('Loaded and split data into train/val/test...')
-
-    training_labels = torch.FloatTensor(training_data.labels)
+    training_labels = [torch.FloatTensor(b.labels) for b in mini_batches]
     val_labels = torch.FloatTensor(val_data.labels)
     test_labels = torch.FloatTensor(test_data.labels)
 
     print('Converting datasets to dense representation...')
 
     # Convert to dense representation
-    ds_train = util2.sparse_to_dense(training_data, nfeatures)
+    ds_train = [util2.sparse_to_dense(b, nfeatures) for b in mini_batches]
     print('Train converted...')
     ds_val = util2.sparse_to_dense(val_data, nfeatures)
     print('Val converted...')
     ds_test = util2.sparse_to_dense(test_data, nfeatures)
     print('Test converted...')
     # And convert to torch Tensors
-    ds_train = torch.FloatTensor(ds_train)
+    ds_train = [torch.FloatTensor(t) for t in ds_train]
     ds_val = torch.FloatTensor(ds_val)
     ds_test = torch.FloatTensor(ds_test)
 
@@ -310,6 +343,7 @@ def main():
                                 val_y=val_labels,
                                 loss_function=loss_function,
                                 l_rate=learning_rate, weight_decay=weight_decay,
+                                patience=patience, patience_metric=patience_metric,
                                 n_epoch=epochs, verbose=1)
 
     # Show statistics - you can change top N to another positive integer value

@@ -171,7 +171,7 @@ class SentimentData:
         idx = numpy.cumsum(numpy.array(
             [0] + [int(p * nexamples / sum_p) for p in proportions], dtype=numpy.int32))
         perm = numpy.random.permutation(nexamples)
-        return self._split_data(idx, perm)
+        return self._split_data(perm, idx)
 
     def train_val_test_split(self):
         idx = numpy.array([0, 4800, 5400, 6000], dtype=numpy.int32)
