@@ -166,7 +166,7 @@ class RNNTagger(nn.Module):
         # To get a better representation of the words, we pass the input through the embedding
         # layer, which replaces each word index by its corresponding embedding vector.
 
-        raise NotImplementedError("Insert embedding layer here.")
+        X = self.embedding_layer(X)
 
         # X is now a 3-dimensional tensor with shape (batch_size, sequence_length,
         # embedding_size).
@@ -188,7 +188,7 @@ class RNNTagger(nn.Module):
 
             X = torch.nn.utils.rnn.pack_padded_sequence(X, lengths, batch_first=True)
 
-            raise NotImplementedError("Insert RNN layer here")
+            X, _ = self.rnn_layer.forward(X)
 
             X, _ = torch.nn.utils.rnn.pad_packed_sequence(X, batch_first=True)
 
@@ -201,16 +201,16 @@ class RNNTagger(nn.Module):
         # contents, it only reorganizes the underlying data structure. It is a necessary step before
         # reshaping the tensor. Simply call the .contiguous() method on the tensor.
 
-        raise NotImplementedError("Make the X tensor contiguous.")
+        X = X.contiguous()
 
-        raise NotImplementedError("Reshape the X tensor using view().")
+        X = X.view(-1, self.rnn_layer_size)
 
         # The last step is passing the tensor through the dense layer and the activation function.
         # The shape of the output will be (batch_size * sequence_length, tagset_size).
 
-        raise NotImplementedError("Insert dense layer here.")
+        X = self.dense_layer(X)
 
-        raise NotImplementedError("Insert activation layer here.")
+        X = self.activation_layer(X)
 
         # Finally, we flatten the output for easier loss analysis.
         X = X.view(-1, self.tagset_size)

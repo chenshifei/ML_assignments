@@ -84,9 +84,13 @@ def main():
     # a computation.
     embedding = EmbeddingSpace(emb_file)
 
-    dog = embedding["dog"]
-    dog_similar = embedding.fetch_k_closest(dog)
-    print(dog_similar)
+    # dog = embedding["dog"]
+    # dog_similar = embedding.fetch_k_closest(dog)
+    # print(dog_similar)
+
+    life = embedding['life']
+    music = embedding['music']
+    print(embedding.fetch_k_closest(life - music))
 
 
 if __name__ == "__main__":
