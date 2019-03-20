@@ -2,6 +2,7 @@ import sys
 import time
 import torch
 
+from copy import deepcopy
 from datetime import datetime
 
 
@@ -53,18 +54,25 @@ class ConfusionMatrix():
     """
 
     # TODO NaNs
-    def __init__(self, n_classes, ignore_index=None):
+    def __init__(self, n_classes, ignore_index=None, class_dict=None):
         self.n_classes = n_classes
         self.matrix = torch.zeros((n_classes, n_classes), dtype=torch.float)
         # ignore_index is used for ignoring the padding token
         self.ignore_index = ignore_index
         self.filter = torch.LongTensor([i for i in range(n_classes) if i is not ignore_index])
+        self.class_dict = class_dict
 
     def __repr__(self):
         return repr(self.matrix.int())
 
     def __str__(self):
         return str(self.matrix.int())
+
+    def reset(self):
+        self.matrix = torch.zeros((self.n_classes, self.n_classes), dtype=torch.float)
+
+    def copy(self):
+        return deepcopy(self)
 
     def add(self, predictions, targets):
         if predictions.numel() != targets.numel():
@@ -75,33 +83,30 @@ class ConfusionMatrix():
             self.matrix[predictions[i], targets[i]] += 1
 
     def accuracy(self):
-        matrix = self.matrix.index_select(0,self.filter).index_select(1,self.filter)
+        matrix = self.matrix.index_select(0, self.filter).index_select(1,self.filter)
         res = matrix.diag().sum() / matrix.sum()
         return res
-
-    def mean(self, vector):
-        non_nan = vector == vector
-        vector[vector != vector] = 0
-        return vector.sum() / non_nan.sum()
 
     def precision(self, mean=False):
         matrix = self.matrix.index_select(0, self.filter).index_select(1, self.filter)
         res = matrix.diag() / matrix.sum(dim=0)
         if mean:
-            return mean_with_nan(res)
+            return mean_without_nan(res)
         return res
 
     def recall(self, mean=False):
         matrix = self.matrix.index_select(0, self.filter).index_select(1, self.filter)
         res = matrix.diag() / matrix.sum(dim=1)
         if mean:
-            return mean_with_nan(res)
+            return mean_without_nan(res)
         return res
 
     def f_score(self, b2=1, mean=False):
         res = (1 + b2) * self.precision() * self.recall() / (b2 * self.precision() + self.recall())
+        # Set NaNs to zero
+        res[res.ne(res)] = 0
         if mean:
-            return mean_with_nan(res)
+            return mean_without_nan(res)
         return res
 
     def class_frequency(self, count_predictions=False):
@@ -114,7 +119,9 @@ class ConfusionMatrix():
         else:
             return matrix.sum(dim=0) / matrix.sum()
 
-    def print_class_stats(self, class_dict, fscore_b2=1):
+    def print_class_stats(self, class_dict=None, fscore_b2=1):
+        if not class_dict:
+            class_dict = self.class_dict
         precision = self.precision()
         recall = self.recall()
         f_score = self.f_score(b2=fscore_b2)
@@ -124,20 +131,22 @@ class ConfusionMatrix():
         for i, j in enumerate(item.item() for item in self.filter):
             print("{:s}\t{:.4f}\t{:.4f}\t{:.4f}".format(class_dict[j], precision[i], recall[i], f_score[i]))
         print(len(headline)*"-")
-        print("Mean\t{:.4f}\t{:.4f}\t{:.4f}".format(mean_with_nan(precision),
-                                                    mean_with_nan(recall),
-                                                    mean_with_nan(f_score)))
+        print("Mean\t{:.4f}\t{:.4f}\t{:.4f}".format(mean_without_nan(precision),
+                                                    mean_without_nan(recall),
+                                                    mean_without_nan(f_score)))
 
-    def matrix_to_csv(self, class_dict, filename, ignore_ignore=False):
+    def matrix_to_csv(self, filename, class_dict=None):
+        if not class_dict:
+            class_dict = self.class_dict
         with open(filename, "w") as csv:
             print(",".join([""] + [class_dict[i] for i in range(self.n_classes)]), file=csv)
             for i in range(self.n_classes):
                 print(",".join([class_dict[i]] + [str(int(self.matrix[i, j])) for j in range(self.n_classes)]),
                       file=csv)
 
-def mean_with_nan(vector):
-    non_nan = vector == vector
-    vector[vector != vector] = 0
+def mean_without_nan(vector):
+    non_nan = vector.eq(vector)
+    vector[vector.ne(vector)] = 0
     return vector.sum() / non_nan.sum()
 
 def loadbar(percent, n_blocks=15):
@@ -154,3 +163,10 @@ def stderr_print(*args, **kwargs):
 
 def timestamp():
     return datetime.now().strftime("%y%m%d-%H%M%S")
+
+def dictlist_to_csv(dictlist, filename):
+    keys = list(dictlist[0].keys())
+    with open(filename, "w") as out:
+        print(",".join(keys), file=out)
+        for line in dictlist:
+            print(",".join([str(line[k]) for k in keys]), file=out)
