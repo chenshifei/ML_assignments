@@ -133,7 +133,7 @@ class RNNTagger(nn.Module):
             # For each "left-to-right" layer there is one "right-to-left" layer.
             ##################
 
-            raise NotImplementedError
+            rnn_layer_number = 2 * self.rnn_layer_number
 
         else:
             rnn_layer_number = self.rnn_layer_number
@@ -203,7 +203,7 @@ class RNNTagger(nn.Module):
 
         X = X.contiguous()
 
-        X = X.view(-1, self.rnn_layer_size)
+        X = X.view(-1, self.rnn_out_size)
 
         # The last step is passing the tensor through the dense layer and the activation function.
         # The shape of the output will be (batch_size * sequence_length, tagset_size).

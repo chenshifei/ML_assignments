@@ -35,7 +35,7 @@ hyperparams = {
     "rnn_layer_number": 1,
 
     # bidirectionality of rnn layer
-    "bidirectional": False,
+    "bidirectional": True,
 
     # RNN cell type
     "cell_type": "RNN_TANH",  # Basic RNN
@@ -86,7 +86,7 @@ dataparams = {
 
     # embedding file
     "emb_file": "../nobackup/tmp/ml2019/glove/english.glove.tiny.txt",
-    # "emb_file": "/nobackup/tmp/ml2019/glove/english.glove.6B.50d.txt",
+    # "emb_file": "../nobackup/tmp/ml2019/glove/english.glove.6B.50d.txt",
 
     # length of input sentences
     # (shorter sentences are padded to match this length)
