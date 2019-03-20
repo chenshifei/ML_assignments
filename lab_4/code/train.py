@@ -38,8 +38,8 @@ hyperparams = {
     "bidirectional": True,
 
     # RNN cell type
-    "cell_type": "RNN_TANH",  # Basic RNN
-    # "cell_type": "LSTM",
+    # "cell_type": "RNN_TANH",  # Basic RNN
+    "cell_type": "LSTM",
     # "cell_type": "PEEP",      # Peephole cell (VG task only)
 
     # dropout

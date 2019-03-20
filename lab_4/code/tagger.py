@@ -150,7 +150,10 @@ class RNNTagger(nn.Module):
             # hidden and cell layer in one tuple.
             ##################
 
-            raise NotImplementedError
+            # self.hidden_layer = nn.LSTM(self.embedding_dim, self.rnn_layer_size, self.rnn_layer_number, bidirectional=self.bidirectional)
+            h_0 = torch.randn(rnn_layer_number, batch_size, self.rnn_layer_size)
+            c_0 = torch.randn(rnn_layer_number, batch_size, self.rnn_layer_size)
+            self.hidden_layer = (h_0, c_0)
 
     def forward(self, X, lengths):
         """
@@ -187,8 +190,8 @@ class RNNTagger(nn.Module):
             # After passing through the RNN layer we unpack the sequences and re-pad them.
 
             X = torch.nn.utils.rnn.pack_padded_sequence(X, lengths, batch_first=True)
-
-            X, _ = self.rnn_layer.forward(X)
+            
+            X, self.hidden_layer = self.rnn_layer(X, self.hidden_layer)
 
             X, _ = torch.nn.utils.rnn.pad_packed_sequence(X, batch_first=True)
 
