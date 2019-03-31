@@ -35,7 +35,7 @@ hyperparams = {
     "rnn_layer_number": 1,
 
     # bidirectionality of rnn layer
-    "bidirectional": True,
+    "bidirectional": False,
 
     # RNN cell type
     # "cell_type": "RNN_TANH",  # Basic RNN
@@ -43,7 +43,7 @@ hyperparams = {
     # "cell_type": "PEEP",      # Peephole cell (VG task only)
 
     # dropout
-    "dropout_rate": 0,
+    "dropout_rate": 0.1,
 
     # optimizer type
     "optimizer": optim.Adam,
@@ -71,8 +71,8 @@ hyperparams = {
 dataparams = {
     # directory for output files: trained models, logs and stats
     "output_dir": "../out",
-    "save_log": False,
-    "save_conf_matrix": False,
+    "save_log": True,
+    "save_conf_matrix": True,
 
     # data directory
     "data_dir": "../nobackup/tmp/ml2019/datasets/english",

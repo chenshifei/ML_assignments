@@ -55,10 +55,11 @@ class PeepholeCell(nn.Module):
 
         # NOTE: The following line computes the ingate without the peephole connection.
         # You will have to add the peephole connection yourself.
-        ingate = F.linear(input, self.w_ii, self.b_ii) + F.linear(hx, self.w_hi, self.b_hi)
+        ingate = F.linear(input, self.w_ii, self.b_ii) + F.linear(hx, self.w_hi, self.b_hi) + F.linear(cx, self.w_ci, self.b_ci)
         ingate = torch.sigmoid(ingate)
 
-        raise NotImplementedError("Calculate forgetgate here. Follow the structure of the ingate.")
+        forgetgate = F.linear(input, self.w_if, self.b_if) + F.linear(hx, self.w_hf, self.b_hf) + F.linear(cx, self.w_cf, self.b_cf)
+        forgetgate = torch.sigmoid(forgetgate)
 
         # NOTE: The following line computes the proposed_cellstate without the peephole connection.
         # You will have to add the peephole connection yourself.
@@ -67,7 +68,7 @@ class PeepholeCell(nn.Module):
 
         cy = (forgetgate * cx) + (ingate * proposed_cellstate)
 
-        raise NotImplementedError("Calculate outgate here. Follow the structure of the gates above.")
+        outgate = F.linear(input, self.w_io, self.b_io) + F.linear(hx, self.w_ho, self.b_ho) + F.linear(cy, self.w_cyo, self.b_cyo)
 
         hy = outgate * torch.tanh(cy)
 
@@ -118,6 +119,7 @@ class RNNTagger(nn.Module):
                                         bidirectional=self.bidirectional,
                                         batch_first=True)
         self.hidden_layer = None
+        self.dropout_layer = nn.Dropout(self.dropout_rate)
         self.dense_layer = nn.Linear(self.rnn_out_size, self.tagset_size)
         self.activation_layer = self.activation(dim=1)
 
@@ -194,6 +196,10 @@ class RNNTagger(nn.Module):
             X, self.hidden_layer = self.rnn_layer(X, self.hidden_layer)
 
             X, _ = torch.nn.utils.rnn.pad_packed_sequence(X, batch_first=True)
+        
+        # Dropout
+
+        X = self.dropout_layer(X)
 
         # The shape of the output of the RNN layer is (batch_size, max_sentence_len, rnn_layer_size).
         # To be able to pass the tensor on to the dense (linear) layer, we need to reshape it by
