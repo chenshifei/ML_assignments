@@ -152,7 +152,6 @@ class RNNTagger(nn.Module):
             # hidden and cell layer in one tuple.
             ##################
 
-            # self.hidden_layer = nn.LSTM(self.embedding_dim, self.rnn_layer_size, self.rnn_layer_number, bidirectional=self.bidirectional)
             h_0 = torch.randn(rnn_layer_number, batch_size, self.rnn_layer_size)
             c_0 = torch.randn(rnn_layer_number, batch_size, self.rnn_layer_size)
             self.hidden_layer = (h_0, c_0)

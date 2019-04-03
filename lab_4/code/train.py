@@ -13,7 +13,7 @@ from util import stderr_print
 
 torch.manual_seed(123)
 
-evaluate_on_test_data = False
+evaluate_on_test_data = True
 
 # The hyperparameter dictionary contains parameters related to the network
 
@@ -23,27 +23,27 @@ hyperparams = {
     # "learning_rate": 1,
 
     # numbers of the training epochs
-    "number_of_epochs": 12,
+    "number_of_epochs": 24,
 
     # mini-batch size
     "batch_size": 256,
 
     # size of the hidden layer
-    "rnn_layer_size": 100,
+    "rnn_layer_size": 120,
 
     # number of hidden layers
-    "rnn_layer_number": 1,
+    "rnn_layer_number": 5,
 
     # bidirectionality of rnn layer
     "bidirectional": False,
 
     # RNN cell type
     # "cell_type": "RNN_TANH",  # Basic RNN
-    "cell_type": "LSTM",
-    # "cell_type": "PEEP",      # Peephole cell (VG task only)
+    # "cell_type": "LSTM",
+    "cell_type": "PEEP",      # Peephole cell (VG task only)
 
     # dropout
-    "dropout_rate": 0.1,
+    "dropout_rate": 0,
 
     # optimizer type
     "optimizer": optim.Adam,
