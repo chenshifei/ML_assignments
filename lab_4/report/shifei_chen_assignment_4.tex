@@ -87,4 +87,6 @@ The implementation was similar to the basic RNN. There was some hints inside the
 
 On the other hand the performances was not good at all. I got $0.4$-$0.5$ of accuracy with different combinations of hyperparameters and that was way worse than RNNs without peepholes. There were two things I need to mention here, one is that it seems like that the number of trainable parameters with peephole cells was no longer related to the depth of RNN layers any more. It was only affected by the size of the RNN. The other thing was I could not make the code work under bidirectional mode. Anyway even comparing with a single directional \verb|LSTM| or \verb|RNN_TANH| tagger, the peephole tagger still underperformed. (Breuel, 2015) ran a bunch of benchmarks and said that ``Peephole connections never resulted in any improved performance'' in his conclusion.\cite{breuel2015benchmarking} Also, (Gers, Schraudolph \& Schmidhuber, 2002) mentioned themselves that peephole connections is ``a promising approach for tasks that require the accurate measurement or generation of time intervals.''\cite{gers2002learning} For our RNN tagger task, peephole connection was not a better choice.
 
+\printbibliography
+
 \end{document}
